@@ -42,7 +42,8 @@ OptionalEntityID&  OptionalEntityID::operator=(const EntityID id) {
 template <typename T>
 struct ComponentRef {
     bool isValid() {return data != 0x0;};
-    ComponentRef<T>(T * data) {this->data = data;};
+    ComponentRef(T* data) : data(data) {}
+
     T& operator*() { return *data; }
     const T& operator*() const { return *data; }
     T* operator->() { return data; }

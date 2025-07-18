@@ -24,15 +24,16 @@ int main (int argc, char *argv[]) {
 		auto [position, velocity] = refs.unwrap();
 
 		//single components
-		auto acc = ECS::getComponent<Acceleration>(ball);
-		if(!acc.isValid()) continue;
+		auto accRef = ECS::getComponent<Acceleration>(ball);
+		if(!accRef.isValid()) continue;
+		auto & acc = *accRef;
 
 		position.x += velocity.dx * timeStep;
 		position.y += velocity.dy * timeStep;
 		position.z += velocity.dz * timeStep;
 		velocity.dy -= gravity * timeStep;
 		printf("%f %f %f\n", position.x, position.y, position.z);
-		printf("%f\n", acc->ddy); 
+		printf("%f\n", acc.ddy); 
 	}
 	
 	return 0;
