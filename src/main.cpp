@@ -11,30 +11,28 @@ struct Acceleration{float ddx, ddy, ddz;};
 
 int main (int argc, char *argv[]) {
 	ECS::registerType<Position>();
-	ECS::registerType<Velocity>();
-	ECS::registerType<Acceleration>();
+	ECS::registerMultipleTypes<Velocity, Acceleration>();
 	auto ball = ECS::newEntity();
 
-	ECS::addComponent(ball, Position{0,500,0});
+	ECS::addMultipleComponents(ball, Position{0, 500, 0}, Acceleration{0,30,0});
 	ECS::addComponent(ball, Velocity{0,30,0});
-	ECS::addComponent(ball, Acceleration{0,0,0});
 	//gravity system with euler solver
 	for(int i = 0; i < 100; ++i) {
-		auto pPtr = ECS::getComponent<Position>(ball); 
-		auto vPtr = ECS::getComponent<Velocity>(ball); 
-		auto aPtr = ECS::getComponent<Acceleration>(ball); 
-		if(!pPtr || !vPtr || !aPtr) continue;
-		pPtr->x += vPtr->dx * timeStep;
-		pPtr->y += vPtr->dy * timeStep;
-		pPtr->z += vPtr->dz * timeStep;
-		
-		vPtr->dx += aPtr->ddx * timeStep;
-		vPtr->dy += aPtr->ddy * timeStep;
-		vPtr->dz += aPtr->ddz * timeStep;
+		//multiple components
+		auto refs = ECS::getMultipleComponents<Position, Velocity>(ball);
+		if(!refs.isValid()) continue;
+		auto [position, velocity] = refs.unwrap();
 
-		aPtr->ddy += -gravity;
+		//single components
+		auto acc = ECS::getComponent<Acceleration>(ball);
+		if(!acc.isValid()) continue;
 
-		printf("%f %f %f\n", pPtr->x, pPtr->y, pPtr->z);
+		position.x += velocity.dx * timeStep;
+		position.y += velocity.dy * timeStep;
+		position.z += velocity.dz * timeStep;
+		velocity.dy -= gravity * timeStep;
+		printf("%f %f %f\n", position.x, position.y, position.z);
+		printf("%f\n", acc->ddy); 
 	}
 	
 	return 0;

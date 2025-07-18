@@ -4,6 +4,9 @@
 #include <cstdio>
 #include <vector>
 #include <cstring>
+#include <tuple>
+#include <optional>
+
 using EntityID = unsigned int;
 using TypeID = unsigned int;
 #ifndef MAX_ECS_TYPES
@@ -36,6 +39,38 @@ OptionalEntityID&  OptionalEntityID::operator=(const EntityID id) {
 };
 #endif
 
+template <typename T>
+struct ComponentRef {
+    bool isValid() {return data != 0x0;};
+    ComponentRef<T>(T * data) {this->data = data;};
+    T& operator*() { return *data; }
+    const T& operator*() const { return *data; }
+    T* operator->() { return data; }
+    const T* operator->() const { return data; }
+private:
+    T* data;
+};
+
+template <typename... Ts>
+struct MultipleComponentRefs {
+public:
+    MultipleComponentRefs(std::tuple<Ts*...> ptrs) : ptrs(ptrs) {}
+
+    bool isValid() const {
+        return (... && (std::get<Ts*>(ptrs) != nullptr));
+    }
+
+    std::tuple<Ts&...> unwrap() {
+        return std::apply([](Ts*... ps) -> std::tuple<Ts&...> {
+            return std::tie(*ps...);
+        }, ptrs);
+    }
+
+private:
+    std::tuple<Ts*...> ptrs;
+};
+
+
 struct ECS {
     static EntityID newEntity();
     static void removeEntity(EntityID entity);
@@ -45,7 +80,12 @@ struct ECS {
     template <typename T>
         static void removeComponent(EntityID entity);
     template <typename T>
-        static T* getComponent(EntityID entity);
+        static ComponentRef<T> getComponent(EntityID entity);
+
+    template <typename... Ts>
+        static MultipleComponentRefs<Ts...> getMultipleComponents(EntityID entity);
+    template <typename... Ts>
+        static void addMultipleComponents(EntityID entity, const Ts& ... components);
 
     static void* getComponentByID(EntityID entity, TypeID typeIdx);
     static void addComponentByID(EntityID entity, TypeID typeIdx, size_t size);
@@ -57,6 +97,10 @@ struct ECS {
         static TypeID getTypeIndex();
     template <typename T>
         static void registerType();
+
+    template <typename... Ts>
+        static void registerMultipleTypes();
+
 
 private:
     //private types/
@@ -74,6 +118,9 @@ private:
     };
     //private methods
     inline static bool hasComponent(EntityID entity, TypeID typeIdx);
+    template <typename T>
+    inline static T* getComponentInternally(EntityID entity);
+
 
     //private members
     const static size_t DOES_NOT_HAVE_COMPONENT = 0;
@@ -124,6 +171,16 @@ void ECS::addComponent(EntityID entity, const T& component) {
     entityMap[entity].offsets[typeIdx] = offset + 1;
 }
 
+template <typename... Ts>
+void ECS::addMultipleComponents(EntityID entity, const Ts& ... components) {
+    (addComponent(entity, components),...);
+}
+
+template <typename... Ts>
+void ECS::registerMultipleTypes() {
+    (registerType<Ts>,...);
+}
+
 template <typename T>
 void ECS::removeComponent(EntityID entity) {
     TypeID typeIdx = getTypeIndex<T>(); 
@@ -138,9 +195,8 @@ void ECS::removeComponent(EntityID entity) {
 }
 
 
-
 template <typename T>
-T* ECS::getComponent(EntityID entity) {
+T* ECS::getComponentInternally(EntityID entity) {
     TypeID typeIdx = getTypeIndex<T>(); 
     if(entity >= _entityCount) return nullptr;
     if(!hasComponent(entity, typeIdx)) return nullptr;
@@ -152,6 +208,20 @@ T* ECS::getComponent(EntityID entity) {
     // Cast bytes back to struct
     return (T*)(&data[offset]); 
 }
+
+template <typename T>
+ComponentRef<T> ECS::getComponent(EntityID entity) {
+    return ComponentRef<T>(getComponentInternally<T>(entity)); 
+}
+
+
+template <typename... Ts>
+MultipleComponentRefs<Ts...> ECS::getMultipleComponents(EntityID entity) {
+    return MultipleComponentRefs<Ts...>(
+        std::make_tuple(getComponentInternally<Ts>(entity)...)
+    );
+}
+
 
 template <typename T>
 TypeID ECS::getTypeIndex() {
