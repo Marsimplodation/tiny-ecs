@@ -41,23 +41,27 @@ OptionalEntityID&  OptionalEntityID::operator=(const EntityID id) {
 
 template <typename T>
 struct ComponentRef {
-    bool isValid() {return data != 0x0;};
+    bool hasValue() {return data != 0x0;};
     ComponentRef(T* data) : data(data) {}
+    T& unrwap(){return *data;}
+
 
     T& operator*() { return *data; }
     const T& operator*() const { return *data; }
     T* operator->() { return data; }
     const T* operator->() const { return data; }
+    explicit operator bool() const {
+        return data != 0x0;
+    }
 private:
     T* data;
 };
 
 template <typename... Ts>
 struct MultipleComponentRefs {
-public:
     MultipleComponentRefs(std::tuple<Ts*...> ptrs) : ptrs(ptrs) {}
 
-    bool isValid() const {
+    bool hasValues() const {
         return (... && (std::get<Ts*>(ptrs) != nullptr));
     }
 
@@ -65,6 +69,10 @@ public:
         return std::apply([](Ts*... ps) -> std::tuple<Ts&...> {
             return std::tie(*ps...);
         }, ptrs);
+    }
+
+    explicit operator bool() const {
+        return hasValues();
     }
 
 private:
@@ -87,6 +95,9 @@ struct ECS {
         static MultipleComponentRefs<Ts...> getMultipleComponents(EntityID entity);
     template <typename... Ts>
         static void addMultipleComponents(EntityID entity, const Ts& ... components);
+
+    template <typename... Ts>
+    static std::vector<EntityID> allEntitiesWith();
 
     static void* getComponentByID(EntityID entity, TypeID typeIdx);
     static void addComponentByID(EntityID entity, TypeID typeIdx, size_t size);
@@ -221,6 +232,16 @@ MultipleComponentRefs<Ts...> ECS::getMultipleComponents(EntityID entity) {
     return MultipleComponentRefs<Ts...>(
         std::make_tuple(getComponentInternally<Ts>(entity)...)
     );
+}
+
+template <typename... Ts>
+std::vector<EntityID> ECS::allEntitiesWith() {
+    std::vector<EntityID> out;
+    for(int i = 0; i < _entityCount; ++i) {
+        bool hasAllComponents = ((hasComponent(i, getTypeIndex<Ts>())) & ...);
+        if(hasAllComponents) out.push_back(i);
+    }
+    return out;
 }
 
 
