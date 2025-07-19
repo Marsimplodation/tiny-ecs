@@ -43,7 +43,7 @@ template <typename T>
 struct ComponentRef {
     bool hasValue() {return data != 0x0;};
     ComponentRef(T* data) : data(data) {}
-    T& unrwap(){return *data;}
+    T& unwrap(){return *data;}
 
 
     T& operator*() { return *data; }
