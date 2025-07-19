@@ -1,6 +1,6 @@
 # tiny\_ecs — A Minimalist Header-Only ECS for C++
 
-**tiny\_ecs** is a simple, header-only Entity Component System (ECS) designed for fast prototyping, educational use, and small projects. It's easy to integrate, requires no external dependencies, and uses modern C++ idioms with a minimal API surface.
+**tiny\_ecs** is a simple, header-only Entity Component System (ECS) designed for educational use, and small projects. It's easy to integrate and requires no external dependencies.
 
 ---
 
@@ -105,7 +105,7 @@ int main (int argc, char *argv[]) {
 
 ## Planned features
 
-* Ability to register Systems with parallel execution to get the S of ECS
+* Ability to register systems with parallel execution to get the S of ECS
 
 ---
 
