@@ -1,11 +1,6 @@
 #define ECS_IMPLEMENTATION
 #include "tiny_ecs.h"
 
-struct Width{float w;};
-struct Height{float h;};
-struct Radius{float r;};
-struct Area{float a;};
-
 typedef struct {
     float x, y;
 }  Position, Velocitiy;
