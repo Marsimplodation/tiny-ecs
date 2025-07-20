@@ -39,7 +39,7 @@ struct Velocity {
 
 int main (int argc, char *argv[]) {
     // Register components
-    ECS::registerType<Transform>();
+    ECS::registerMultipleTypes<Position, Velocity>();
 
     // Create entities and attach components
     EntityID entitiy1 = ECS::newEntity();
@@ -106,7 +106,7 @@ struct Transform {
 
 // your code ///
 // Register components
-ECS::registerMultipleTypes<Position, Velocitiy>();
+ECS::registerType<Transform>();
 ECS_UI::registerType<Transform>("Transform");
 ECS_UI::addToType<Transform>("Position", offsetof(Transform, pos), ECS_UI::ELEMENT_TYPE::VEC2);
 ECS_UI::addToType<Transform>("Velocity", offsetof(Transform, vel), ECS_UI::ELEMENT_TYPE::VEC2);
