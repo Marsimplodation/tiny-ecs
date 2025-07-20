@@ -202,7 +202,7 @@ void ECS::removeComponent(EntityID entity) {
     auto & data = componentPools[typeIdx].data;
     auto & unused = componentPools[typeIdx].unusedSpace;
     auto offset = entityMap[entity].offsets[typeIdx];
-    unused.push_back(offset);
+    unused.push_back(offset - 1);
     entityMap[entity].offsets[typeIdx] = DOES_NOT_HAVE_COMPONENT;
 }
 
@@ -269,7 +269,7 @@ void ECS::removeComponentByID(EntityID entity, TypeID typeIdx) {
     auto & data = componentPools[typeIdx].data;
     auto & unused = componentPools[typeIdx].unusedSpace;
     auto offset = entityMap[entity].offsets[typeIdx];
-    unused.push_back(offset);
+    unused.push_back(offset - 1);
     entityMap[entity].offsets[typeIdx] = DOES_NOT_HAVE_COMPONENT;
 }
 
@@ -331,11 +331,7 @@ void ECS::removeEntity(EntityID entity) {
     if(entity >= _entityCount) return;
     for(auto e : unusedEntities) if(e == entity) return;
     for(TypeID typeIdx = 0; typeIdx <= _maxTypeID; ++typeIdx) {
-        if(!hasComponent(entity, typeIdx)) continue;
-        auto & data = componentPools[typeIdx].data;
-        auto & unused = componentPools[typeIdx].unusedSpace;
-        auto offset = entityMap[entity].offsets[typeIdx];
-        unused.push_back(offset);
+        removeComponentByID(entity, typeIdx);
     }
     unusedEntities.push_back(entity);
 }
