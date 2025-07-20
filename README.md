@@ -30,17 +30,20 @@ Just drop `tiny_ecs.h` into your project and include it:
 #define ECS_IMPLEMENTATION
 #include "tiny_ecs.h"
 
-typedef struct {
+struct Position {
     float x, y;
-} Position, Velocitiy;
+};
+struct Velocity {
+    float x, y;
+};
 
 int main (int argc, char *argv[]) {
     // Register components
-    ECS::registerMultipleTypes<Position, Velocitiy>();
+    ECS::registerMultipleTypes<Position, Velocity>();
 
     // Create entities and attach components
     EntityID entitiy1 = ECS::newEntity();
-    ECS::addMultipleComponents(entitiy1, Position{1,2}, Velocitiy{0.1, 0.05});
+    ECS::addMultipleComponents(entitiy1, Position{1,2}, Velocity{0.1, 0.05});
 
     EntityID entitiy2 = ECS::newEntity();
     ECS::addComponent(entitiy2, Position{2,2});
@@ -48,7 +51,7 @@ int main (int argc, char *argv[]) {
 
     // Simulate a movement system
     for(auto e : ECS::allEntitiesWith<Position, Velocitiy>()) {
-        auto refs = ECS::getMultipleComponents<Position, Velocitiy>(e);
+        auto refs = ECS::getMultipleComponents<Position, Velocity>(e);
 
         // Optionally check for presence:
         // if (!refs) continue;
@@ -84,6 +87,39 @@ int main (int argc, char *argv[]) {
 | `ECS::getComponent<T>(entity)`              | Get a pointer-like wrapper for a single component    |
 | `ECS::getMultipleComponents<Ts...>(entity)` | Get a tuple-like wrapper for multiple components     |
 | `ECS::allEntitiesWith<Ts...>()`             | Iterate over all entities that have those components |
+
+---
+
+## Dear ImGui Integration
+
+`tiny_ecs_ui.h` offers a small integration into Dear ImGui for debugging and editing components
+
+```cpp
+#define ECS_IMPLEMENTATION
+#include "tiny_ecs.h"
+#include "tiny_ui.h"
+
+struct Transform {
+    Position pos;
+    Velocity vel;
+};
+
+// your code ///
+// Register components
+ECS::registerMultipleTypes<Position, Velocitiy>();
+ECS_UI::registerType<Transform>("Transform");
+ECS_UI::addToType<Transform>("Position", offsetof(Transform, pos), ECS_UI::ELEMENT_TYPE::VEC2);
+ECS_UI::addToType<Transform>("Velocity", offsetof(Transform, vel), ECS_UI::ELEMENT_TYPE::VEC2);
+
+// your code ///
+// ImGui Loop
+ECS_UI::renderEntityList(entity_list_to_display, amount); 
+OptionalEntityID selected = ECS_UI::currentEntity;
+//ECS_UI::renderEntityInspector(ECS_UI::CHILD);
+ECS_UI::renderEntityInspector(ECS_UI::OWN_WINDOW);
+```
+
+
 
 ---
 
