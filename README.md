@@ -39,7 +39,7 @@ struct Velocity {
 
 int main (int argc, char *argv[]) {
     // Register components
-    ECS::registerMultipleTypes<Position, Velocity>();
+    ECS::registerType<Transform>();
 
     // Create entities and attach components
     EntityID entitiy1 = ECS::newEntity();
