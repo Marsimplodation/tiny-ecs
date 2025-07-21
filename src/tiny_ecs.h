@@ -99,6 +99,9 @@ struct ECS {
     template <typename... Ts>
     static std::vector<EntityID> allEntitiesWith();
 
+    template <typename... Ts, typename... Args, typename F>
+    static void for_each(F &&func,  Args&&... args);
+
     static void* getComponentByID(EntityID entity, TypeID typeIdx);
     static void addComponentByID(EntityID entity, TypeID typeIdx, size_t size);
     static void removeComponentByID(EntityID entity, TypeID typeIdx);
@@ -243,6 +246,16 @@ std::vector<EntityID> ECS::allEntitiesWith() {
     }
     return out;
 }
+
+
+template <typename... Ts, typename... Args, typename F>
+void ECS::for_each(F &&func, Args&&... args) {
+    for(int i = 0; i < _entityCount; ++i) {
+        bool hasAllComponents = ((hasComponent(i, getTypeIndex<Ts>())) & ...);
+        if(hasAllComponents) func((EntityID)i, *getComponentInternally<Ts>(i)..., args...);
+    }
+}
+
 
 
 template <typename T>
