@@ -2,6 +2,7 @@
 #define TINY_ECS
 #include <cstddef>
 #include <cstdio>
+#include <oneapi/tbb/parallel_for.h>
 #include <vector>
 #include <cstring>
 #include <tuple>
@@ -99,8 +100,16 @@ struct ECS {
     template <typename... Ts>
     static std::vector<EntityID> allEntitiesWith();
 
+    // -------- Systems --------- //
     template <typename... Ts, typename... Args, typename F>
-    static void for_each(F &&func,  Args&&... args);
+    static void forEach(F &&func,  Args&&... args);
+    template <typename... Ts, typename... Args, typename F>
+    static void parallelForEach(F &&func,  Args&&... args);
+    template <typename... Ts, typename... Args, typename F>
+    static void forEach(F &&func, EntityID * entities, int range,  Args&&... args);
+    template <typename... Ts, typename... Args, typename F>
+    static void parallelForEach(F &&func, EntityID * entities, int range,  Args&&... args);
+    
 
     static void* getComponentByID(EntityID entity, TypeID typeIdx);
     static void addComponentByID(EntityID entity, TypeID typeIdx, size_t size);
@@ -116,13 +125,16 @@ struct ECS {
     template <typename... Ts>
         static void registerMultipleTypes();
 
-
 private:
     //private types/
     struct ComponentPool {
         std::vector<size_t> unusedSpace;
         std::vector<char> data; 
     };
+   
+
+
+
 
     template <typename T>
     struct ECSType {
@@ -249,11 +261,37 @@ std::vector<EntityID> ECS::allEntitiesWith() {
 
 
 template <typename... Ts, typename... Args, typename F>
-void ECS::for_each(F &&func, Args&&... args) {
+void ECS::forEach(F &&func, Args&&... args) {
     for(int i = 0; i < _entityCount; ++i) {
         bool hasAllComponents = ((hasComponent(i, getTypeIndex<Ts>())) & ...);
-        if(hasAllComponents) func((EntityID)i, *getComponentInternally<Ts>(i)..., args...);
+        if(hasAllComponents) func((EntityID)i, *getComponentInternally<Ts>(i)..., std::forward<Args>(args)...);
     }
+}
+
+template <typename... Ts, typename... Args, typename F>
+void ECS::forEach(F &&func, EntityID * entities, int range, Args&&... args) {
+    for(int i = 0; i < range; ++i) {
+        auto entity = entities[i];
+        bool hasAllComponents = ((hasComponent(entity, getTypeIndex<Ts>())) & ...);
+        if(hasAllComponents) func((EntityID)entity, *getComponentInternally<Ts>(entity)..., std::forward<Args>(args)...);
+    }
+}
+
+template <typename... Ts, typename... Args, typename F>
+void ECS::parallelForEach(F &&func, Args&&... args) {
+    tbb::parallel_for(0, (int)_entityCount, [&](int i){
+        bool hasAllComponents = ((hasComponent(i, getTypeIndex<Ts>())) & ...);
+        if(hasAllComponents) func((EntityID)i, *getComponentInternally<Ts>(i)..., std::forward<Args>(args)...);
+    });
+}
+
+template <typename... Ts, typename... Args, typename F>
+void ECS::parallelForEach(F &&func, EntityID * entities, int range, Args&&... args) {
+    tbb::parallel_for(0, (int)range, [&](int i){
+        auto entity = entities[i];
+        bool hasAllComponents = ((hasComponent(entity, getTypeIndex<Ts>())) & ...);
+        if(hasAllComponents) func((EntityID)entity, *getComponentInternally<Ts>(entity)..., std::forward<Args>(args)...);
+    });
 }
 
 
