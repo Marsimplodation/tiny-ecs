@@ -7,6 +7,7 @@
 ## Features
 
 * Header-only: just include and use.
+* Parallelized execution with TBB
 * Tuple-style component access via `getMultipleComponents`.
 * `registerType`/`registerMultipleTypes` system for flexible component setup.
 * Optional safety checks via `.hasValue()` or `unwrap()`.
@@ -37,6 +38,12 @@ struct Velocity {
     float x, y;
 };
 
+void movementSystem(EntityID e, Position & p, Velocity & v) {
+    p.x += v.x;
+    p.y += v.y;
+    printf("Entity %d: %f %f\n", e, p.x, p.y);
+}
+
 int main (int argc, char *argv[]) {
     // Register components
     ECS::registerMultipleTypes<Position, Velocity>();
@@ -47,27 +54,16 @@ int main (int argc, char *argv[]) {
 
     EntityID entitiy2 = ECS::newEntity();
     ECS::addComponent(entitiy2, Position{2,2});
-    ECS::addComponent(entitiy2, Velocitiy{2,2});
+    ECS::addComponent(entitiy2, Velocity{2,2});
 
     // Simulate a movement system
-    for(auto e : ECS::allEntitiesWith<Position, Velocitiy>()) {
-        auto refs = ECS::getMultipleComponents<Position, Velocity>(e);
+    ECS::forEach<Position, Velocity>(movementSystem);
+    ECS::parallelForEach<Position, Velocity>(movementSystem);
 
-        // Optionally check for presence:
-        // if (!refs) continue;
-
-        auto [p, v] = refs.unwrap();
-
-        // Alternative: single component access
-        // auto ref = ECS::getComponent<Position>(e);
-        // if (!ref) continue;
-        // auto& p = ref.unwrap();
-
-        p.x += v.x;
-        p.y += v.y;
-
-        printf("Entity %d: %f %f\n", e, p.x, p.y);
-    }
+    // Getting components manually
+    auto refs = ECS::getMultipleComponents<Position, Velocity>(entity1);
+    if(!refs) return;
+    auto [pos, vel] = refs.unwrap();
 
     return 0;
 }
@@ -87,6 +83,8 @@ int main (int argc, char *argv[]) {
 | `ECS::getComponent<T>(entity)`              | Get a pointer-like wrapper for a single component    |
 | `ECS::getMultipleComponents<Ts...>(entity)` | Get a tuple-like wrapper for multiple components     |
 | `ECS::allEntitiesWith<Ts...>()`             | Iterate over all entities that have those components |
+| `ECS::forEach<Ts...>(func, args)`           | Call func for all entities that have those components |
+| `ECS::parallelForEach<Ts...>(func, args)`           | Call func for all entities that have those components |
 
 ---
 
@@ -136,12 +134,6 @@ ECS_UI::renderEntityInspector(ECS_UI::OWN_WINDOW);
 * Perfect for game jams, simulations, toy engines, or educational tools.
 * No heavy architecture or boilerplate — start coding right away.
 * Easy to extend or integrate into existing codebases.
-
----
-
-## Planned features
-
-* Ability to register systems with parallel execution to get the S of ECS
 
 ---
 

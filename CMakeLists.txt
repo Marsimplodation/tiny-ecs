@@ -10,4 +10,6 @@ file(GLOB_RECURSE SOURCES
 		"src/*.cpp"
 		"src/*.h")
 # Add executable
+find_package(TBB REQUIRED)
 add_executable(${PROJECT_NAME}  ${SOURCES})
+target_link_libraries(${PROJECT_NAME} TBB::tbb)
